@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { AlertCircle, SearchX } from 'lucide-react';
+import { SearchX, AlertCircle } from 'lucide-react';
 import MonthSelector from './components/MonthSelector';
 import SearchBar from './components/SearchBar';
 import StudentCard from './components/StudentCard';
@@ -12,7 +12,7 @@ export default function App() {
   const [selectedLabel, setSelectedLabel] = useState('');
   const [rollInput, setRollInput] = useState('');
 
-  const { loading, error, studentMap, loadMonth } = useSheetData();
+  const { loading, error, studentMap, colMeta, hasData, loadMonth } = useSheetData();
 
   const handleMonthSelect = (sheetName, label) => {
     setSelectedSheet(sheetName);
@@ -26,28 +26,23 @@ export default function App() {
     return studentMap[normalizeRoll(rollInput)] || null;
   }, [studentMap, rollInput]);
 
-  const showNotFound = studentMap && rollInput.trim() && !foundStudent && !loading;
-
-  // "No data" means we got an error that looks like a missing sheet
-  const noData = error && selectedSheet;
+  const showNotFound  = studentMap && rollInput.trim() && !foundStudent && !loading;
+  // Sheet fetched OK but no attendance data filled in yet
+  const showNoData    = studentMap && !hasData && !loading && !rollInput.trim();
 
   return (
     <div className="min-h-screen bg-orange-50">
-      {/* Header — flat orange, no gradient */}
       <header className="bg-orange-500 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           <img src="/favicon.svg" alt="Logo" className="w-12 h-12" />
           <div>
-            <h1 className="text-white font-semibold text-lg leading-tight">
-              Hostel Attendance
-            </h1>
+            <h1 className="text-white font-semibold text-lg leading-tight">Hostel Attendance</h1>
             <p className="text-orange-100 text-xs">Mess &amp; Attendance Viewer</p>
           </div>
         </div>
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-5">
-        {/* Controls */}
         <div className="bg-white rounded-2xl border border-orange-100 shadow-sm p-5 space-y-4">
           <MonthSelector selectedSheet={selectedSheet} onSelect={handleMonthSelect} />
           <SearchBar
@@ -59,14 +54,25 @@ export default function App() {
 
         {loading && <Loader />}
 
-        {/* No data for this sheet */}
-        {noData && (
-          <div className="flex flex-col items-center justify-center py-12 text-stone-400">
+        {/* Fetch error */}
+        {error && (
+          <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+            <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-medium">We don't have data for {selectedLabel}</p>
+              <p className="text-xs mt-0.5 opacity-75">The sheet may not exist yet or hasn't been filled in.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Sheet loaded but no attendance filled in */}
+        {showNoData && (
+          <div className="flex flex-col items-center justify-center py-10 text-stone-400">
             <CalendarEmpty />
-            <p className="text-sm font-medium mt-3">No data available</p>
-            <p className="text-xs mt-1">
-              We don't have attendance records for{' '}
-              <span className="font-semibold text-orange-500">{selectedLabel}</span>.
+            <p className="text-sm font-medium mt-3">No attendance data yet</p>
+            <p className="text-xs mt-1 text-center">
+              <span className="font-semibold text-orange-500">{selectedLabel}</span> sheet exists
+              but attendance hasn't been filled in yet.
             </p>
           </div>
         )}
@@ -79,7 +85,7 @@ export default function App() {
           </div>
         )}
 
-        {foundStudent && <StudentCard student={foundStudent} />}
+        {foundStudent && <StudentCard student={foundStudent} colMeta={colMeta} />}
 
         {!selectedSheet && !loading && (
           <p className="text-center text-sm text-stone-400 py-8">
@@ -87,7 +93,7 @@ export default function App() {
           </p>
         )}
 
-        {studentMap && !rollInput.trim() && !loading && (
+        {studentMap && hasData && !rollInput.trim() && !loading && (
           <p className="text-center text-sm text-stone-400 py-4">
             Enter your roll number to view attendance.
           </p>
@@ -97,7 +103,6 @@ export default function App() {
   );
 }
 
-// Simple inline SVG for "empty calendar" state
 function CalendarEmpty() {
   return (
     <svg className="w-12 h-12 text-orange-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>

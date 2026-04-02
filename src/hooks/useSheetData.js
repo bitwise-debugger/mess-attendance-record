@@ -2,26 +2,24 @@ import { useState, useCallback, useRef } from 'react';
 import { fetchSheetData } from '../services/sheetService';
 import { buildStudentMap } from '../utils/helpers';
 
-/**
- * Custom hook that manages fetching, caching, and exposing sheet data.
- * Cache prevents re-fetching the same month twice.
- */
 export function useSheetData() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [loading,    setLoading]    = useState(false);
+  const [error,      setError]      = useState(null);
   const [studentMap, setStudentMap] = useState(null);
-  const [currentMonth, setCurrentMonth] = useState(null);
+  const [colMeta,    setColMeta]    = useState([]);
+  const [hasData,    setHasData]    = useState(false);
 
-  // In-memory cache: { [sheetName]: studentMap }
+  // Cache: { [sheetName]: { studentMap, colMeta, hasData } }
   const cache = useRef({});
 
   const loadMonth = useCallback(async (sheetName) => {
     if (!sheetName) return;
 
-    // Return cached data if available
     if (cache.current[sheetName]) {
-      setStudentMap(cache.current[sheetName]);
-      setCurrentMonth(sheetName);
+      const c = cache.current[sheetName];
+      setStudentMap(c.studentMap);
+      setColMeta(c.colMeta);
+      setHasData(c.hasData);
       setError(null);
       return;
     }
@@ -29,18 +27,16 @@ export function useSheetData() {
     setLoading(true);
     setError(null);
     setStudentMap(null);
+    setColMeta([]);
+    setHasData(false);
 
     try {
-      const rows = await fetchSheetData(sheetName);
-
-      if (!rows || rows.length === 0) {
-        throw new Error('No data found in this sheet. It may be empty or the name is incorrect.');
-      }
-
-      const map = buildStudentMap(rows);
-      cache.current[sheetName] = map;
+      const { students, colMeta, hasData } = await fetchSheetData(sheetName);
+      const map = buildStudentMap(students);
+      cache.current[sheetName] = { studentMap: map, colMeta, hasData };
       setStudentMap(map);
-      setCurrentMonth(sheetName);
+      setColMeta(colMeta);
+      setHasData(hasData);
     } catch (err) {
       setError(err.message || 'Something went wrong while fetching data.');
     } finally {
@@ -48,5 +44,5 @@ export function useSheetData() {
     }
   }, []);
 
-  return { loading, error, studentMap, currentMonth, loadMonth };
+  return { loading, error, studentMap, colMeta, hasData, loadMonth };
 }
