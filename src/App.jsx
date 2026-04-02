@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
-import { SearchX, AlertCircle } from 'lucide-react';
+import { SearchX, AlertCircle, CalendarDays } from 'lucide-react';
 import MonthSelector from './components/MonthSelector';
+import MonthPickerModal from './components/MonthPickerModal';
 import SearchBar from './components/SearchBar';
 import StudentCard from './components/StudentCard';
 import Loader from './components/Loader';
@@ -10,7 +11,8 @@ import { normalizeRoll } from './utils/helpers';
 export default function App() {
   const [selectedSheet, setSelectedSheet] = useState('');
   const [selectedLabel, setSelectedLabel] = useState('');
-  const [rollInput, setRollInput] = useState('');
+  const [rollInput,     setRollInput]     = useState('');
+  const [modalOpen,     setModalOpen]     = useState(false);
 
   const { loading, error, studentMap, colMeta, hasData, loadMonth } = useSheetData();
 
@@ -43,12 +45,11 @@ export default function App() {
         </div>
       </header>
 
-      {/* ── Body: sidebar + main ── */}
-      <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6
-                      flex flex-col md:flex-row gap-6 items-start">
+      {/* ── Desktop/tablet: sidebar + main ── */}
+      <div className="hidden md:flex flex-1 max-w-7xl w-full mx-auto px-6 py-6 gap-6 items-start">
 
-        {/* ── Sidebar ── */}
-        <aside className="w-full md:w-72 lg:w-80 shrink-0 space-y-4">
+        {/* Sidebar */}
+        <aside className="w-72 lg:w-80 shrink-0">
           <div className="bg-white rounded-2xl border border-orange-100 shadow-sm p-5 space-y-4">
             <MonthSelector selectedSheet={selectedSheet} onSelect={handleMonthSelect} />
             <SearchBar
@@ -59,64 +60,127 @@ export default function App() {
           </div>
         </aside>
 
-        {/* ── Main content ── */}
+        {/* Main */}
         <main className="flex-1 min-w-0 space-y-5">
-
-          {loading && <Loader />}
-
-          {error && (
-            <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700">
-              <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-sm font-medium">No data for {selectedLabel}</p>
-                <p className="text-xs mt-0.5 opacity-75">The sheet may not exist yet or hasn't been filled in.</p>
-              </div>
-            </div>
-          )}
-
-          {showNoData && (
-            <div className="flex flex-col items-center justify-center py-16 text-stone-400">
-              <CalendarEmpty />
-              <p className="text-sm font-medium mt-3">No attendance data yet</p>
-              <p className="text-xs mt-1 text-center">
-                <span className="font-semibold text-orange-500">{selectedLabel}</span> exists but hasn't been filled in.
-              </p>
-            </div>
-          )}
-
-          {showNotFound && (
-            <div className="flex flex-col items-center justify-center py-16 text-stone-400">
-              <SearchX className="w-10 h-10 mb-3" />
-              <p className="text-sm font-medium">No record found</p>
-              <p className="text-xs mt-1">Check the roll number and try again.</p>
-            </div>
-          )}
-
-          {foundStudent && <StudentCard student={foundStudent} colMeta={colMeta} />}
-
-          {!selectedSheet && !loading && (
-            <div className="flex flex-col items-center justify-center py-16 text-stone-400">
-              <CalendarEmpty />
-              <p className="text-sm font-medium mt-3">Pick a month to get started</p>
-              <p className="text-xs mt-1">Select a month from the panel on the left.</p>
-            </div>
-          )}
-
-          {studentMap && hasData && !rollInput.trim() && !loading && (
-            <div className="flex flex-col items-center justify-center py-16 text-stone-400">
-              <SearchX className="w-10 h-10 mb-3" />
-              <p className="text-sm font-medium">Enter your roll number</p>
-              <p className="text-xs mt-1">Type your roll number in the search box to view attendance.</p>
-            </div>
-          )}
-
+          <BodyContent
+            loading={loading} error={error} showNoData={showNoData}
+            showNotFound={showNotFound} foundStudent={foundStudent}
+            colMeta={colMeta} selectedSheet={selectedSheet}
+            selectedLabel={selectedLabel} hasData={hasData}
+            rollInput={rollInput} isMobile={false}
+          />
         </main>
       </div>
+
+      {/* ── Mobile: full-width content + sticky bottom bar ── */}
+      <div className="md:hidden flex-1 flex flex-col">
+
+        {/* Mobile search bar — always visible below header */}
+        <div className="bg-white border-b border-orange-100 px-4 py-3">
+          <SearchBar
+            value={rollInput}
+            onChange={setRollInput}
+            disabled={!studentMap && !loading}
+          />
+        </div>
+
+        {/* Scrollable content area */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 pb-24 space-y-4">
+          <BodyContent
+            loading={loading} error={error} showNoData={showNoData}
+            showNotFound={showNotFound} foundStudent={foundStudent}
+            colMeta={colMeta} selectedSheet={selectedSheet}
+            selectedLabel={selectedLabel} hasData={hasData}
+            rollInput={rollInput} isMobile
+          />
+        </div>
+
+        {/* Sticky bottom bar */}
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-orange-100 shadow-lg px-4 py-3">
+          <button
+            onClick={() => setModalOpen(true)}
+            className="w-full flex items-center justify-between rounded-xl bg-orange-500 px-4 py-3 text-white shadow-sm active:bg-orange-600 transition"
+          >
+            <div className="flex items-center gap-2">
+              <CalendarDays className="w-5 h-5" />
+              <span className="text-sm font-medium">
+                {selectedLabel || 'Select a Month'}
+              </span>
+            </div>
+            <span className="text-xs text-orange-200">Tap to change</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Month picker modal (mobile only) */}
+      <MonthPickerModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        selectedSheet={selectedSheet}
+        onSelect={handleMonthSelect}
+      />
     </div>
   );
 }
 
-function CalendarEmpty() {
+/* ── Shared body content ─────────────────────────────────────────────── */
+function BodyContent({
+  loading, error, showNoData, showNotFound,
+  foundStudent, colMeta, selectedSheet, selectedLabel,
+  hasData, rollInput, isMobile,
+}) {
+  return (
+    <>
+      {loading && <Loader />}
+
+      {error && (
+        <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+          <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
+          <div>
+            <p className="text-sm font-medium">No data for {selectedLabel}</p>
+            <p className="text-xs mt-0.5 opacity-75">The sheet may not exist yet or hasn't been filled in.</p>
+          </div>
+        </div>
+      )}
+
+      {showNoData && (
+        <EmptyState icon={<CalendarEmptySvg />} title="No attendance data yet"
+          sub={<><span className="font-semibold text-orange-500">{selectedLabel}</span> exists but hasn't been filled in.</>}
+        />
+      )}
+
+      {showNotFound && (
+        <EmptyState icon={<SearchX className="w-12 h-12 text-orange-300" />}
+          title="No record found" sub="Check the roll number and try again." />
+      )}
+
+      {foundStudent && <StudentCard student={foundStudent} colMeta={colMeta} isMobile={isMobile} />}
+
+      {!selectedSheet && !loading && (
+        <EmptyState icon={<CalendarEmptySvg />} title="Pick a month to get started"
+          sub={isMobile ? 'Tap the orange button below to choose a month.' : 'Select a month from the panel on the left.'} />
+      )}
+
+      {studentMap && hasData && !rollInput.trim() && !loading && (
+        <EmptyState icon={<SearchX className="w-12 h-12 text-orange-300" />}
+          title="Enter your roll number"
+          sub={isMobile ? 'Type your roll number in the search box above.' : 'Type your roll number in the search box to view attendance.'} />
+      )}
+    </>
+  );
+}
+
+function EmptyState({ icon, title, sub }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-14 text-stone-400 text-center px-4">
+      {icon}
+      <p className="text-sm font-medium mt-3 text-stone-500">{title}</p>
+      <p className="text-xs mt-1 text-stone-400">{sub}</p>
+    </div>
+  );
+}
+
+function CalendarEmptySvg() {
   return (
     <svg className="w-12 h-12 text-orange-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="round" strokeLinejoin="round"
