@@ -1,4 +1,5 @@
-import { User, Home, BedDouble, UtensilsCrossed, Coffee, Moon, Receipt } from 'lucide-react';
+import { useState } from 'react';
+import { User, Home, BedDouble, UtensilsCrossed, Coffee, Moon, Receipt, ChevronDown } from 'lucide-react';
 import { parseMealCount, parseDailyAttendance, buildCalendarGrid, DAY_LABELS } from '../utils/helpers';
 
 export default function StudentCard({ student, colMeta }) {
@@ -89,35 +90,61 @@ export default function StudentCard({ student, colMeta }) {
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-stone-200 inline-block" />Absent</span>
           </div>
 
-          <div className="space-y-6">
-            {calendar.map(({ monthLabel, weeks }) => (
-              <div key={monthLabel}>
-                {calendar.length > 1 && (
-                  <p className="text-xs font-semibold text-orange-500 uppercase tracking-widest mb-2">{monthLabel}</p>
-                )}
-
-                {/* Day-of-week header */}
-                <div className="grid grid-cols-7 mb-1">
-                  {DAY_LABELS.map((lbl) => (
-                    <div key={lbl} className="text-center text-xs font-medium text-stone-400">{lbl}</div>
-                  ))}
-                </div>
-
-                {/* Weeks */}
-                <div className="space-y-1">
-                  {weeks.map((week, wi) => (
-                    <div key={wi} className="grid grid-cols-7 gap-1">
-                      {week.map((cell, ci) =>
-                        cell === null
-                          ? <div key={ci} />
-                          : <CalendarCell key={cell.date} cell={cell} />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
+          <div className="space-y-3">
+            {calendar.map(({ monthLabel, weeks }, idx) => (
+              <CollapsibleMonth
+                key={monthLabel}
+                monthLabel={monthLabel}
+                weeks={weeks}
+                defaultOpen={idx === 0}
+                showLabel={calendar.length > 1}
+              />
             ))}
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Collapsible month section ───────────────────────────────────────── */
+function CollapsibleMonth({ monthLabel, weeks, defaultOpen, showLabel }) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <div className="rounded-xl border border-stone-100 overflow-hidden">
+      {/* Always show the toggle header when there are multiple months,
+          but also show it for single-month so the calendar feels contained */}
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between px-3 py-2 bg-stone-50 hover:bg-orange-50 transition"
+      >
+        <span className="text-xs font-semibold text-orange-500 uppercase tracking-widest">
+          {monthLabel}
+        </span>
+        <ChevronDown
+          className={`w-4 h-4 text-stone-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      {open && (
+        <div className="px-3 pb-3 pt-2 space-y-1">
+          {/* Day-of-week header */}
+          <div className="grid grid-cols-7 mb-1">
+            {DAY_LABELS.map((lbl) => (
+              <div key={lbl} className="text-center text-xs font-medium text-stone-400">{lbl}</div>
+            ))}
+          </div>
+          {/* Weeks */}
+          {weeks.map((week, wi) => (
+            <div key={wi} className="grid grid-cols-7 gap-1">
+              {week.map((cell, ci) =>
+                cell === null
+                  ? <div key={ci} />
+                  : <CalendarCell key={cell.date} cell={cell} />
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>

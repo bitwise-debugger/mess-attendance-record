@@ -26,79 +26,92 @@ export default function App() {
     return studentMap[normalizeRoll(rollInput)] || null;
   }, [studentMap, rollInput]);
 
-  const showNotFound  = studentMap && rollInput.trim() && !foundStudent && !loading;
-  // Sheet fetched OK but no attendance data filled in yet
-  const showNoData    = studentMap && !hasData && !loading && !rollInput.trim();
+  const showNotFound = studentMap && rollInput.trim() && !foundStudent && !loading;
+  const showNoData   = studentMap && !hasData && !loading && !rollInput.trim();
 
   return (
-    <div className="min-h-screen bg-orange-50">
-      <header className="bg-orange-500 shadow-sm">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-          <img src="/favicon.svg" alt="Logo" className="w-12 h-12" />
+    <div className="min-h-screen bg-orange-50 flex flex-col">
+
+      {/* ── Header ── */}
+      <header className="bg-white border-b border-orange-100 shadow-sm shrink-0">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3">
+          <img src="/favicon.svg" alt="Logo" className="w-16 h-16" />
           <div>
-            <h1 className="text-white font-semibold text-lg leading-tight">Hostel Attendance</h1>
-            <p className="text-orange-100 text-xs">Mess &amp; Attendance Viewer</p>
+            <h1 className="text-stone-800 font-semibold text-lg leading-tight">Hostel Attendance</h1>
+            <p className="text-stone-400 text-xs">Mess &amp; Attendance Viewer</p>
           </div>
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-6 space-y-5">
-        <div className="bg-white rounded-2xl border border-orange-100 shadow-sm p-5 space-y-4">
-          <MonthSelector selectedSheet={selectedSheet} onSelect={handleMonthSelect} />
-          <SearchBar
-            value={rollInput}
-            onChange={setRollInput}
-            disabled={!studentMap && !loading}
-          />
-        </div>
+      {/* ── Body: sidebar + main ── */}
+      <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6
+                      flex flex-col md:flex-row gap-6 items-start">
 
-        {loading && <Loader />}
+        {/* ── Sidebar ── */}
+        <aside className="w-full md:w-72 lg:w-80 shrink-0 space-y-4">
+          <div className="bg-white rounded-2xl border border-orange-100 shadow-sm p-5 space-y-4">
+            <MonthSelector selectedSheet={selectedSheet} onSelect={handleMonthSelect} />
+            <SearchBar
+              value={rollInput}
+              onChange={setRollInput}
+              disabled={!studentMap && !loading}
+            />
+          </div>
+        </aside>
 
-        {/* Fetch error */}
-        {error && (
-          <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700">
-            <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
-            <div>
-              <p className="text-sm font-medium">We don't have data for {selectedLabel}</p>
-              <p className="text-xs mt-0.5 opacity-75">The sheet may not exist yet or hasn't been filled in.</p>
+        {/* ── Main content ── */}
+        <main className="flex-1 min-w-0 space-y-5">
+
+          {loading && <Loader />}
+
+          {error && (
+            <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+              <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-medium">No data for {selectedLabel}</p>
+                <p className="text-xs mt-0.5 opacity-75">The sheet may not exist yet or hasn't been filled in.</p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Sheet loaded but no attendance filled in */}
-        {showNoData && (
-          <div className="flex flex-col items-center justify-center py-10 text-stone-400">
-            <CalendarEmpty />
-            <p className="text-sm font-medium mt-3">No attendance data yet</p>
-            <p className="text-xs mt-1 text-center">
-              <span className="font-semibold text-orange-500">{selectedLabel}</span> sheet exists
-              but attendance hasn't been filled in yet.
-            </p>
-          </div>
-        )}
+          {showNoData && (
+            <div className="flex flex-col items-center justify-center py-16 text-stone-400">
+              <CalendarEmpty />
+              <p className="text-sm font-medium mt-3">No attendance data yet</p>
+              <p className="text-xs mt-1 text-center">
+                <span className="font-semibold text-orange-500">{selectedLabel}</span> exists but hasn't been filled in.
+              </p>
+            </div>
+          )}
 
-        {showNotFound && (
-          <div className="flex flex-col items-center justify-center py-12 text-stone-400">
-            <SearchX className="w-10 h-10 mb-3" />
-            <p className="text-sm font-medium">No record found</p>
-            <p className="text-xs mt-1">Check the roll number and try again.</p>
-          </div>
-        )}
+          {showNotFound && (
+            <div className="flex flex-col items-center justify-center py-16 text-stone-400">
+              <SearchX className="w-10 h-10 mb-3" />
+              <p className="text-sm font-medium">No record found</p>
+              <p className="text-xs mt-1">Check the roll number and try again.</p>
+            </div>
+          )}
 
-        {foundStudent && <StudentCard student={foundStudent} colMeta={colMeta} />}
+          {foundStudent && <StudentCard student={foundStudent} colMeta={colMeta} />}
 
-        {!selectedSheet && !loading && (
-          <p className="text-center text-sm text-stone-400 py-8">
-            Pick a month from the calendar above to get started.
-          </p>
-        )}
+          {!selectedSheet && !loading && (
+            <div className="flex flex-col items-center justify-center py-16 text-stone-400">
+              <CalendarEmpty />
+              <p className="text-sm font-medium mt-3">Pick a month to get started</p>
+              <p className="text-xs mt-1">Select a month from the panel on the left.</p>
+            </div>
+          )}
 
-        {studentMap && hasData && !rollInput.trim() && !loading && (
-          <p className="text-center text-sm text-stone-400 py-4">
-            Enter your roll number to view attendance.
-          </p>
-        )}
-      </main>
+          {studentMap && hasData && !rollInput.trim() && !loading && (
+            <div className="flex flex-col items-center justify-center py-16 text-stone-400">
+              <SearchX className="w-10 h-10 mb-3" />
+              <p className="text-sm font-medium">Enter your roll number</p>
+              <p className="text-xs mt-1">Type your roll number in the search box to view attendance.</p>
+            </div>
+          )}
+
+        </main>
+      </div>
     </div>
   );
 }
