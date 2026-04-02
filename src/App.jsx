@@ -35,8 +35,8 @@ export default function App() {
     <div className="min-h-screen bg-orange-50 flex flex-col">
 
       {/* ── Header ── */}
-      <header className="bg-white border-b border-orange-100 shadow-sm shrink-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3">
+      <header className=" border-orange-100 shrink-0">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-2 flex items-center gap-3">
           <img src="/favicon.svg" alt="Logo" className="w-16 h-16" />
           <div>
             <h1 className="text-stone-800 font-semibold text-lg leading-tight">Hostel Attendance</h1>
@@ -76,7 +76,7 @@ export default function App() {
       <div className="md:hidden flex-1 flex flex-col">
 
         {/* Scrollable content area — extra bottom padding for the bar */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 pb-28 space-y-4">
+        <div className="flex-1 overflow-y-auto px-4 py-2 pb-28 space-y-4">
           <BodyContent
             loading={loading} error={error} showNoData={showNoData}
             showNotFound={showNotFound} foundStudent={foundStudent}
