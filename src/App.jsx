@@ -67,7 +67,7 @@ export default function App() {
             showNotFound={showNotFound} foundStudent={foundStudent}
             colMeta={colMeta} selectedSheet={selectedSheet}
             selectedLabel={selectedLabel} hasData={hasData}
-            rollInput={rollInput} isMobile={false}
+            studentMap={studentMap} rollInput={rollInput} isMobile={false}
           />
         </main>
       </div>
@@ -75,40 +75,51 @@ export default function App() {
       {/* ── Mobile: full-width content + sticky bottom bar ── */}
       <div className="md:hidden flex-1 flex flex-col">
 
-        {/* Mobile search bar — always visible below header */}
-        <div className="bg-white border-b border-orange-100 px-4 py-3">
-          <SearchBar
-            value={rollInput}
-            onChange={setRollInput}
-            disabled={!studentMap && !loading}
-          />
-        </div>
-
-        {/* Scrollable content area */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 pb-24 space-y-4">
+        {/* Scrollable content area — extra bottom padding for the bar */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 pb-28 space-y-4">
           <BodyContent
             loading={loading} error={error} showNoData={showNoData}
             showNotFound={showNotFound} foundStudent={foundStudent}
             colMeta={colMeta} selectedSheet={selectedSheet}
             selectedLabel={selectedLabel} hasData={hasData}
-            rollInput={rollInput} isMobile
+            studentMap={studentMap} rollInput={rollInput} isMobile
           />
         </div>
 
-        {/* Sticky bottom bar */}
+        {/* Sticky bottom bar — month button + roll number input side by side */}
         <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-orange-100 shadow-lg px-4 py-3">
-          <button
-            onClick={() => setModalOpen(true)}
-            className="w-full flex items-center justify-between rounded-xl bg-orange-500 px-4 py-3 text-white shadow-sm active:bg-orange-600 transition"
-          >
-            <div className="flex items-center gap-2">
-              <CalendarDays className="w-5 h-5" />
-              <span className="text-sm font-medium">
-                {selectedLabel || 'Select a Month'}
+          <div className="flex gap-2 items-center">
+            {/* Month picker button — compact, fixed width */}
+            <button
+              onClick={() => setModalOpen(true)}
+              className="shrink-0 flex items-center gap-1.5 rounded-xl bg-orange-500 px-3 py-2.5 text-white shadow-sm active:bg-orange-600 transition"
+            >
+              <CalendarDays className="w-4 h-4" />
+              <span className="text-xs font-semibold leading-tight max-w-[72px] truncate">
+                {selectedLabel ? selectedLabel.split(' ')[0] : 'Month'}
               </span>
+            </button>
+
+            {/* Roll number input — fills remaining space */}
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                value={rollInput}
+                onChange={(e) => setRollInput(e.target.value)}
+                disabled={!studentMap && !loading}
+                placeholder="Enter Roll Number…"
+                className="w-full rounded-xl border border-orange-200 bg-orange-50 px-3 py-2.5 text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              />
+              {rollInput && (
+                <button
+                  onClick={() => setRollInput('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400"
+                >
+                  <span className="text-xs">✕</span>
+                </button>
+              )}
             </div>
-            <span className="text-xs text-orange-200">Tap to change</span>
-          </button>
+          </div>
         </div>
       </div>
 
@@ -127,7 +138,7 @@ export default function App() {
 function BodyContent({
   loading, error, showNoData, showNotFound,
   foundStudent, colMeta, selectedSheet, selectedLabel,
-  hasData, rollInput, isMobile,
+  hasData, studentMap, rollInput, isMobile,
 }) {
   return (
     <>
